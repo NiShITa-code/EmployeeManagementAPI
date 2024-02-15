@@ -1,0 +1,5 @@
+Fibonacci series
+reverse a string
+sort array
+create a function which can add subtract and divide two values pass two parameters and type of operation.
+Write a program for type casting

@@ -1,0 +1,4 @@
+Postgre -> function and procedures
+For running multiple output in single console
+Three tier architecture in c sharp
+ask if we have to run programs again and again and also specify which program has to be run by taking input

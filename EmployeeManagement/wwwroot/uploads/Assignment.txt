@@ -1,0 +1,22 @@
+Create two tables :
+1.Employee
+employee id, employee name, designation, department number, salary
+Pk - employee id,
+Fk - department number
+2. Department
+department number, department name, location
+Pk - department number
+Insert data 
+Queries-
+1. Find the maximum salary in each dept show department name and max salary
+
+2. Name the employee who is getting max salary in a particular dept
+
+3. List all the employees who are working in a particular location
+
+4. The sum of salary by designation
+
+5. List dept name, location and designations
+
+
+ 

@@ -1,4 +1,6 @@
-﻿namespace EmployeeManagement.Models
+﻿using System.Reflection.Metadata;
+
+namespace EmployeeManagement.Models
 {
     public class Employee
     {
@@ -15,5 +17,9 @@
         public decimal Salary { get; set; }
 
         public bool IsActive { get; set; } = true;
+
+        public ICollection<Qualification> Qualifications { get; set; } = new List<Qualification>();
+        public ICollection<EmployeeDocument> EmployeeDocuments { get; set; } = new List<EmployeeDocument>();
+
     }
 }
