@@ -8,12 +8,18 @@ namespace EmployeeManagement.Data.Repository
 
         Task<Employee> GetEmployeeByIdAsync(int id);
 
+
+        Task<Employee> GetEmployeeByEmailAsync(string email);
+
         Task<Employee> AddEmployeeAsync(Employee employee);
 
         Task<Employee> DeleteEmployeeAsync(int id);
 
         Task<Employee> UpdateEmployeeAsync(int id, Employee employee);
 
-        
+
+
+
+
     }
 }

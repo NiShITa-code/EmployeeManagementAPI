@@ -11,8 +11,8 @@ namespace EmployeeManagement.Models
             public int EmployeeId { get; set; }
             public string Remarks { get; set; }
 
-            [ForeignKey("EmployeeId")]
-            public Employee Employee { get; set; }
+           
+            
         
     }
 }

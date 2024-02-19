@@ -5,7 +5,11 @@ namespace EmployeeManagement.Models
     public class ApplicationUser: IdentityUser
     {
         public bool isActive { get; set; }
-        
-        
+        public ApplicationUser()
+        {
+            isActive = true;
+        }
+
+
     }
 }

@@ -3,6 +3,7 @@ using EmployeeManagement.Data;
 using EmployeeManagement.Data.Repository;
 using EmployeeManagement.Models;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -17,6 +18,7 @@ namespace EmployeeTests
         private EmployeeDBContext _dbContext;
         private IWebHostEnvironment _environment;
         private ILogger<EmployeeController> _logger;
+        private UserManager<ApplicationUser> _userManager;
         [TestInitialize]
         public void Setup()
         {
@@ -62,7 +64,7 @@ namespace EmployeeTests
             });
             _dbContext.SaveChanges();
             _employeeRepository = new EmployeeRepository(_dbContext);
-            _employeeController = new EmployeeController(_employeeRepository, _environment, _dbContext, _logger);
+            _employeeController = new EmployeeController(_employeeRepository, _environment, _dbContext, _logger, _userManager);
 
         }
         [TestMethod]

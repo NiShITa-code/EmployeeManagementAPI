@@ -3,6 +3,7 @@ using EmployeeManagement.Data.Repository;
 using EmployeeManagement.Models;
 using EmployeeManagement.ViewModel;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -16,12 +17,14 @@ namespace EmployeeManagement.Controllers
         private IWebHostEnvironment _hostingEnvironment;
         private EmployeeDBContext _dbContext;
         private readonly ILogger<EmployeeController> _logger;
-        public EmployeeController(IEmployeeRepository employeeRepository, IWebHostEnvironment hostingEnvironment, EmployeeDBContext dBContext, ILogger<EmployeeController> logger)
+        private readonly UserManager<ApplicationUser> _userManager; 
+        public EmployeeController(IEmployeeRepository employeeRepository, IWebHostEnvironment hostingEnvironment, EmployeeDBContext dBContext, ILogger<EmployeeController> logger, UserManager<ApplicationUser> userManager)
         {
             _employeeRepository = employeeRepository;
             _hostingEnvironment = hostingEnvironment;
             _dbContext = dBContext;
             _logger = logger;
+            _userManager = userManager; 
         }
         [HttpGet]
         public async Task<IEnumerable<Employee>> GetEmployees()
@@ -38,6 +41,19 @@ namespace EmployeeManagement.Controllers
             {
                 return NotFound();
             }
+            return Ok(employee);
+        }
+
+        [HttpGet("employee-details")]
+        public async Task<IActionResult> GetEmployeeDetails(string email)
+        {
+            var employee = await _employeeRepository.GetEmployeeByEmailAsync(email);
+
+            if (employee == null)
+            {
+                return NotFound();
+            }
+
             return Ok(employee);
         }
         [HttpPost]
@@ -73,6 +89,20 @@ namespace EmployeeManagement.Controllers
             {
                 return NotFound();
             }
+            var user = await _userManager.FindByEmailAsync(updatedEmployee.Email);
+            if (user != null)
+            {
+                // Update the IsActive status of the ApplicationUser
+                user.isActive = updatedEmployee.IsActive;
+                var result = await _userManager.UpdateAsync(user);
+                if (!result.Succeeded)
+                {
+                    _logger.LogError("Failed to update IsActive status for ApplicationUser with email {Email}", updatedEmployee.Email);
+
+                    // Return an error response
+                    return StatusCode(500, "Failed to update IsActive status for ApplicationUser");
+                }
+            }
             return Ok(updatedEmployee);
         }
 
@@ -87,10 +117,7 @@ namespace EmployeeManagement.Controllers
                 return BadRequest("No files received in the request");
             }
             var webRootPath = _hostingEnvironment.WebRootPath;
-            if (string.IsNullOrWhiteSpace(webRootPath))
-            {
-                return NotFound("Web root path is not set.");
-            }
+           
 
             if (!Directory.Exists(webRootPath))
             {
@@ -165,11 +192,40 @@ namespace EmployeeManagement.Controllers
 
             var documentData = documents.Select(d => new
             {
+                Id = d.Id,
                 Url = Url.Content(Path.Combine("~/uploads", d.FileName).Replace("\\", "/")),
                 Remarks = d.Remarks
             }).ToList();
 
             return Ok(documentData);
+        }
+
+        [HttpDelete("DeleteDocument/{employeeId}/{documentId}")]
+        public async Task<IActionResult> DeleteDocument(int employeeId, int documentId)
+        {
+            var document = await _dbContext.EmployeeDocuments.FindAsync(documentId);
+
+            if (document == null)
+            {
+                return NotFound("Document not found.");
+            }
+
+            if (document.EmployeeId != employeeId)
+            {
+                return BadRequest("The document does not belong to the specified employee.");
+            }
+
+            _dbContext.EmployeeDocuments.Remove(document);
+            await _dbContext.SaveChangesAsync();
+
+            // Optionally, delete the file from the file system
+            var filePath = Path.Combine(_hostingEnvironment.WebRootPath, "uploads", document.FileName);
+            if (System.IO.File.Exists(filePath))
+            {
+                System.IO.File.Delete(filePath);
+            }
+
+            return Ok("Document deleted successfully.");
         }
         [HttpPost("{id}/qualifications")]
         
@@ -229,8 +285,56 @@ namespace EmployeeManagement.Controllers
             return Ok(qualifications);
 
         }
+        [HttpPut("{employeeId}/qualifications/{qualificationId}")]
+        public async Task<IActionResult> UpdateQualification(int employeeId, int qualificationId, [FromBody] Qualification updatedQualification)
+        {
+            // Find the qualification
+            var qualification = await _dbContext.Qualifications.FirstOrDefaultAsync(q => q.Id == qualificationId && q.EmployeeId == employeeId);
+
+            // If the qualification is not found, return a NotFound response
+            if (qualification == null)
+            {
+                return NotFound($"Qualification with id {qualificationId} for employee with id {employeeId} not found.");
+            }
+
+            // Update the qualification properties
+            qualification.QualificationName = updatedQualification.QualificationName;
+            qualification.Institution = updatedQualification.Institution;
+            qualification.YearOfPassing = updatedQualification.YearOfPassing;
+            qualification.Percentage = updatedQualification.Percentage;
+            qualification.Stream = updatedQualification.Stream;
+
+            // Save the changes
+            await _dbContext.SaveChangesAsync();
+
+            // Return a success response
+            return Ok(qualification);
+        }
+        [HttpDelete("{employeeId}/qualifications/{qualificationId}")]
+        public async Task<IActionResult> DeleteQualification(int employeeId, int qualificationId)
+        {
+            // Find the qualification
+            var qualification = await _dbContext.Qualifications.FirstOrDefaultAsync(q => q.Id == qualificationId && q.EmployeeId == employeeId);
+
+            // If the qualification is not found, return a NotFound response
+            if (qualification == null)
+            {
+                return NotFound($"Qualification with id {qualificationId} for employee with id {employeeId} not found.");
+            }
+
+            // Remove the qualification from the database
+            _dbContext.Qualifications.Remove(qualification);
+
+            // Save the changes
+            await _dbContext.SaveChangesAsync();
+
+            // Return a success response
+            return Ok("Qualification deleted successfully.");
+        }
     }
+
 }
+
 public class QualificationsModel
 {
     public IEnumerable<Qualification> Qualifications { get; set; }

@@ -26,13 +26,19 @@ namespace EmployeeManagement.Controllers
         [HttpPost("register")]
         public async Task<IActionResult> Register(RegisterModel model)
         {
+            var existingUser = await _userManager.FindByEmailAsync(model.Email);
+            if (existingUser != null)
+            {
+                return BadRequest("A user with this email already exists.");
+            }
+
             var user = new ApplicationUser { UserName = model.Email, Email = model.Email };
             var result = await _userManager.CreateAsync(user, model.Password);
 
             if (result.Succeeded)
             {
                 await _signInManager.SignInAsync(user, isPersistent: false);
-                return Ok(new { Message = "Registration successful" });
+                return Ok(new { UserId = user.Id, Message = "Registration successful" });
             }
 
             return BadRequest(result.Errors);
@@ -44,6 +50,11 @@ namespace EmployeeManagement.Controllers
             var user = await _userManager.FindByEmailAsync(model.Email);
             if (user != null && await _userManager.CheckPasswordAsync(user, model.Password))
             {
+                if (!user.isActive)
+                {
+                    return BadRequest(new { error = "Account is inactive" });
+                }
+                var role = await _userManager.GetRolesAsync(user);
                 var tokenHandler = new JwtSecurityTokenHandler();
                 var key = Encoding.ASCII.GetBytes("7eqrDqKZ6vnIxFD0cTzFfJ0hl+Vm00BC42M9BHvr4yc="); // Retrieve secret key from configuration
                 var tokenDescriptor = new SecurityTokenDescriptor
@@ -56,7 +67,7 @@ namespace EmployeeManagement.Controllers
                     SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
                 };
                 var token = tokenHandler.CreateToken(tokenDescriptor);
-                return Ok(new { Token = tokenHandler.WriteToken(token), User = new { user.Id, user.UserName, user.Email } });
+                return Ok(new { Token = tokenHandler.WriteToken(token), User = new { user.Id, user.UserName, user.Email, role } });
             }
 
             return Unauthorized();

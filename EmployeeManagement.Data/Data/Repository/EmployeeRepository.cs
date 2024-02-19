@@ -14,15 +14,21 @@ namespace EmployeeManagement.Data.Repository
 
         public async Task<IEnumerable<Employee>> GetEmployeesAsync()
         {
-            var query = (from employees in _dbContext.Employees
-                         select employees).ToListAsync();
-            return await query;
+            var query = await _dbContext.Employees
+                .Include(e => e.Qualifications)
+                .Include(e => e.EmployeeDocuments)
+                .ToListAsync();
+            return query;
         }
 
         public async Task<Employee> GetEmployeeByIdAsync(int id)
         {
-            Employee employee = await _dbContext.Employees.FindAsync(id);
+            Employee employee = await _dbContext.Employees
+                .Include(e => e.Qualifications)
+                .Include(e => e.EmployeeDocuments)
+                .FirstOrDefaultAsync(e => e.Id == id);
             return employee;
+            
 
         }
 
@@ -34,6 +40,14 @@ namespace EmployeeManagement.Data.Repository
             return employee;
         }
 
+        public async Task<Employee> GetEmployeeByEmailAsync(string email)
+        {
+            Employee employee = await _dbContext.Employees
+                .Include(e => e.Qualifications)
+                .Include(e => e.EmployeeDocuments)
+                .FirstOrDefaultAsync(e => e.Email == email);
+            return employee;
+        }
         public async Task<Employee> DeleteEmployeeAsync(int id)
         {
             var employee = await GetEmployeeByIdAsync(id);
@@ -61,6 +75,7 @@ namespace EmployeeManagement.Data.Repository
 
             return employeeQuery;
         }
+
 
     }
 }
